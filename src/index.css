@@ -1,0 +1,282 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  /* a16z speedrun — the single chromatic element in the whole light theme */
+  --speedrun-gradient: linear-gradient(
+    90deg,
+    #00c6c6,
+    #00b5f4,
+    #00a1ff,
+    #398cff,
+    #757aff,
+    #906dff,
+    #a162ff
+  );
+  /* World Cup 2026 brand palette — bright, vivid gradient. */
+  --wc-spectrum: linear-gradient(
+    100deg,
+    #a435f0,
+    #e0347a,
+    #ff5a3c,
+    #25c46a,
+    #b6e84a
+  );
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Light a16z broadsheet is the default chrome (Home / League). */
+body {
+  margin: 0;
+  background-color: #ffffff;
+  color: #000000;
+  font-family: "Inter", system-ui, sans-serif;
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* The Live Match View opts back into the dark "market crash" theme by wrapping
+   its content in .theme-dark — restores the original bg + pitch texture. */
+.theme-dark {
+  background-color: #080810;
+  color: #f2f2f2;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(136, 136, 170, 0.04) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+}
+
+@layer components {
+  /* --- a16z light primitives ------------------------------------------- */
+  .eyebrow {
+    font-family: "Inter Tight", "Inter", system-ui, sans-serif;
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-graphite;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Light editorial card: hairline border, no shadow, gentle radius. */
+  .card-light {
+    @apply bg-paper border border-canvas rounded-xl;
+  }
+  /* Primary CTA — now carries the World Cup 2026 brand colours. */
+  .btn-gradient {
+    background-image: var(--wc-spectrum);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    @apply text-paper font-bold rounded-lg transition-opacity;
+  }
+  .btn-gradient:hover {
+    opacity: 0.9;
+  }
+  /* Gradient text (wordmark / key numbers) — World Cup brand colours. */
+  .text-gradient {
+    background-image: var(--wc-spectrum);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .rule {
+    @apply border-t border-canvas;
+  }
+  /* World Cup 2026 colourful accents. */
+  .wc-ribbon {
+    background-image: var(--wc-spectrum);
+  }
+  .wc-text-gradient {
+    background-image: var(--wc-spectrum);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Bright colour-blocked hero band — the USA/Canada/Mexico host-city triptych
+     sits at the back, washed over by the vivid World Cup gradient (kept slightly
+     translucent so the skylines read as a subtle texture) plus a soft left-side
+     scrim so white text stays legible. */
+  .wc-hero {
+    background-image:
+      linear-gradient(100deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 58%),
+      linear-gradient(
+        110deg,
+        rgba(164, 53, 240, 0.9) 0%,
+        rgba(224, 52, 122, 0.9) 28%,
+        rgba(255, 90, 60, 0.9) 52%,
+        rgba(37, 196, 106, 0.9) 78%,
+        rgba(182, 232, 74, 0.9) 100%
+      ),
+      url("/wc-hero-photos.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+  /* Full-bleed line-art host-city map watermark, sits behind the schedule column.
+     Spans the whole viewport width (centred on the page) so the left/right city
+     columns fall into the white margins beside the centred fixtures list, while
+     the empty middle of the map stays clear under the schedule. */
+  .wc-map-bg {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 100vw;
+    height: 100%;
+    transform: translateX(-50%);
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Keep the map's real aspect ratio (no stretching): span the full viewport
+     width so the edge cities land in the side margins, and let the height scale
+     naturally, vertically centred behind the fixtures. */
+  .wc-map-bg img {
+    width: 100%;
+    height: auto;
+    opacity: 0.85;
+  }
+  /* Flying-balls overlay: identical geometry to .wc-map-bg so the ball paths
+     line up with the same map coordinates, but layered ABOVE the schedule
+     (z-10) so the balls sweep over the fixtures instead of behind them. */
+  .wc-map-balls {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 100vw;
+    height: 100%;
+    transform: translateX(-50%);
+    z-index: 20;
+    pointer-events: none;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .wc-map-balls img {
+    width: 100%;
+    height: auto;
+    opacity: 0.9;
+  }
+  /* Numbered step badge in a brand colour (set via inline style / utility). */
+  .wc-num {
+    @apply inline-flex h-5 w-5 items-center justify-center rounded text-[11px] font-black text-paper;
+  }
+
+  /* --- dark primitives (retained for the Match view) ------------------- */
+  .label {
+    @apply text-[11px] font-medium uppercase tracking-wider text-text-secondary;
+  }
+  .card {
+    @apply bg-surface border border-border rounded-2xl;
+  }
+
+  /* --- Kickoff Cards collectible card face ----------------------------- */
+  /* White base, 2:3 aspect, 16px radius, tier-coloured border. The tier glow
+     and border colour are supplied inline from players.js tier metadata. */
+  .kc-card {
+    @apply relative flex flex-col overflow-hidden rounded-card border-2 bg-paper;
+    aspect-ratio: 2 / 3;
+  }
+  /* Legend shimmer sweep — a diagonal light band that travels across the card. */
+  .kc-shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      rgba(255, 255, 255, 0.65) 48%,
+      rgba(255, 214, 90, 0.35) 52%,
+      transparent 70%
+    );
+    background-size: 250% 250%;
+    animation: shimmer 2.6s linear infinite;
+    pointer-events: none;
+  }
+}
+
+/* Custom scrollbar (light) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+/* Dark-themed regions get the original darker scrollbar. */
+.theme-dark ::-webkit-scrollbar-thumb {
+  background: #1e1e30;
+}
+.theme-dark ::-webkit-scrollbar-thumb:hover {
+  background: #2a2a40;
+}
+
+/* --- Wallet adapter button → a16z light treatment ---------------------- */
+.wallet-adapter-button {
+  background-image: var(--wc-spectrum) !important;
+  background-color: transparent !important;
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  font-family: "Inter", system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  height: auto !important;
+  padding: 0.75rem 1.25rem !important;
+  border-radius: 0.5rem !important;
+  font-size: 0.875rem !important;
+  line-height: 1.2 !important;
+  width: 100%;
+  justify-content: center;
+  transition: opacity 0.15s ease !important;
+}
+.wallet-adapter-button:not([disabled]):hover {
+  background-image: var(--wc-spectrum) !important;
+  opacity: 0.9;
+}
+.wallet-adapter-button[disabled] {
+  background: #e5e7eb !important;
+  color: #5e5d5c !important;
+  cursor: not-allowed;
+}
+.wallet-adapter-button-start-icon,
+.wallet-adapter-button-end-icon {
+  display: none !important;
+}
+/* Modal stays readable on the light theme. */
+.wallet-adapter-modal-wrapper {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+.wallet-adapter-modal-title {
+  color: #000000 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
