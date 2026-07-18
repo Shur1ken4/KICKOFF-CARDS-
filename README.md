@@ -1,28 +1,47 @@
-# MatchMuse League
+# Kickoff Cards
 
-**We killed the WhatsApp World Cup spreadsheet — and made it feel like watching the stock market crash in real time with your friends.**
+**A free-to-play World Cup 2026 collectible card game, powered by live TxLINE match data on Solana.**
 
-Friends create a private league and are randomly assigned World Cup teams. As matches play live, each team's win probability (live TxLINE odds) becomes their **portfolio value**. A goal fires an **AI Moment Card** explaining what just shifted. Highest cumulative portfolio at the end of the tournament wins the league.
+You always argue with a friend about who called the match right. Kickoff Cards settles it. Collect player and team cards, **back one before each match**, and watch it **resolve on real World Cup data** — win a bonus card and Instinct Points, or watch your card burn. Highest card total in your league wins.
 
-> No betting. No wagers. Just team value, portfolios & bragging rights.
+> Free to play. No real money, no wagers, no monetary value. Just cards, predictions and bragging rights.
 
-## Features
+## The core loop
 
-- **Live Match View** — three panels: match header (dynamic home/away flag-colour gradient), live events timeline, and a real-time win-probability chart (Recharts).
-- **AI Moment Cards** — on a goal / red card / big odds swing, the screen pulses in the scoring team's colour and a Claude-generated 2-sentence insight slides down.
-- **Live Leaderboard** — friends ranked by portfolio value with animated rank changes, gold/silver/bronze medals, and per-day deltas.
-- **Match Story** — auto-generated post-match recap (top turning points + biggest momentum swing) you can save as a shareable image.
-- **The world on one screen** — every team is themed with its real flag colours, so France vs Brazil is blue/red vs green/yellow.
+1. **Collect** — build a starter collection of player cards (legend / rare / common) and team cards.
+2. **Back a card** — before a match kicks off, stake a card on a prediction (a player scores, a team wins, etc.).
+3. **Resolve on live data** — TxLINE streams the real score and match events. When the match finishes, stakes resolve automatically.
+4. **Earn or burn** — a correct call earns a bonus card + Instinct Points; a wrong call burns the card (revivable once with Instinct Points). League standings are the sum of your owned cards' points.
+
+## Two modes
+
+- **Demo match** — a scripted France–Brazil replay so the full collect → back → resolve → earn/burn loop is always playable, even outside tournament windows.
+- **Live World Cup** — the `/live` hub lists real fixtures from TxLINE. Activate live data with your Solana wallet and open any real match to follow live score, odds and events.
 
 ## Tech
 
-React 18 · Vite · TailwindCSS · Recharts · React Router · Anthropic Claude (`claude-sonnet-4-6`) · TxLINE World Cup API · localStorage (no backend).
+React 19 · Vite 8 · React Router v7 · TailwindCSS 3 · framer-motion · Recharts · Solana wallet-adapter (`@solana/web3.js`, `@coral-xyz/anchor`, `@solana/spl-token`) · TxLINE World Cup API · localStorage (no backend).
+
+## TxLINE + Solana integration
+
+Live data is gated behind a wallet-driven, on-chain activation handshake (Solana **devnet**):
+
+1. Request a guest JWT from TxLINE.
+2. Run an on-chain Anchor `subscribe()` transaction on Solana devnet.
+3. Sign the transaction signature + JWT and activate the API token.
+
+The activated token is cached in `localStorage` with a TTL. Once active, the app polls TxLINE every 15s for fixtures, scores, odds and events, and degrades to last-known data with a "Connection issue" badge on failure.
+
+- `src/hooks/useFixtures.js` — polls the fixtures feed; falls back to sample fixtures.
+- `src/hooks/useLiveMatch.js` — polls score / odds / events every 15s for real matches; runs the replay engine for the demo match.
+- `src/services/txline.js` — TxLINE REST client + defensive response normalizers.
+- `src/wallet/` — wallet identity + the TxLINE activation handshake.
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env   # add your keys (optional — app runs in replay mode without them)
+cp .env.example .env   # add your keys (optional — the demo match runs without them)
 npm run dev
 ```
 
@@ -33,24 +52,16 @@ VITE_TXLINE_API_KEY=your_txline_key_here
 VITE_ANTHROPIC_API_KEY=your_anthropic_key_here
 ```
 
-Both are **optional**. Without keys (or with the placeholder values) the app runs in **replay mode** using a built-in France 2–1 Brazil match, and Moment Cards use a local insight fallback — so the full experience is always demoable, even after matches end.
+Both are optional. Without keys the **demo match** and full card loop still work; live World Cup fixtures fall back to sample data until you activate live TxLINE access with a devnet wallet.
 
-## Demo flow
-
-1. **Home** → tap **"Live demo match"** to watch the France vs Brazil replay: goals fire Moment Cards, the odds chart animates, and the post-match Story appears at full time.
-2. **Create league** → on the league screen tap **"Add demo friends"** → **Start Draft** to see the live leaderboard with portfolio values and today's fixtures.
-
-## How it works
-
-- `src/hooks/useLiveMatch.js` — polls TxLINE every 15s for real matches; runs a virtual-clock **replay engine** for the demo match and graceful fallback. Returns score, events and an odds time-series.
-- `src/services/txline.js` — TxLINE API client + defensive response normalizers; degrades to last-known data on failure ("showing last known data" badge).
-- `src/services/anthropic.js` — calls Claude for Moment insights with a templated local fallback.
-- `src/lib/league.js` — league/draft/portfolio logic, all persisted in `localStorage`.
-
-## Build / Deploy
+## Build
 
 ```bash
 npm run build      # outputs to dist/
+npm run preview    # serve the production build locally
+npm run lint       # oxlint
 ```
 
-Deploys to Vercel as a static SPA (`vercel.json` rewrites all routes to `index.html`). `html2canvas` is code-split and loaded only when exporting a Match Story.
+## Compliance
+
+Kickoff Cards is a **free-to-play social card game**. No real money or monetary value is involved, and all on-chain activity runs on Solana **devnet**. A disclaimer to this effect is shown on every screen.
