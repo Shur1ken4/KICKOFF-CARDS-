@@ -18,8 +18,18 @@ const WORLD_CUP_COMPETITION_ID = null;
 // refreshed by setActiveAuth() right after a wallet completes the handshake.
 let activeAuth = getStoredAuth();
 
+// Subscribers (e.g. useFixtures) that want to react the moment access changes,
+// so live data can start streaming without a page reload.
+const authListeners = new Set();
+
+export function subscribeAuth(listener) {
+  authListeners.add(listener);
+  return () => authListeners.delete(listener);
+}
+
 export function setActiveAuth(auth) {
   activeAuth = auth || null;
+  for (const listener of authListeners) listener(hasLiveAccess());
 }
 
 export const hasLiveAccess = () => Boolean(activeAuth?.apiToken && activeAuth?.jwt);

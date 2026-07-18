@@ -1,8 +1,8 @@
 const MAP = {
   live: { label: "LIVE", cls: "bg-primary/15 text-primary border-primary/30", dot: true },
-  ht: { label: "HT", cls: "bg-goal/15 text-goal border-goal/30", dot: false },
-  finished: { label: "FT", cls: "bg-text-secondary/10 text-text-secondary border-border", dot: false },
-  upcoming: { label: "SOON", cls: "bg-text-secondary/10 text-text-secondary border-border", dot: false },
+  ht: { label: "HT", cls: "bg-goal/15 text-goal border-goal/40", dot: false },
+  finished: { label: "FT", cls: "bg-canvas text-graphite border-canvas", dot: false },
+  upcoming: { label: "SOON", cls: "bg-canvas text-graphite border-canvas", dot: false },
 };
 
 export default function StatusBadge({ status, className = "" }) {

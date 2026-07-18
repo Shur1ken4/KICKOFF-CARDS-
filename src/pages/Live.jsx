@@ -5,9 +5,17 @@ import { useTxlineAccess } from "../wallet/useTxlineAccess.js";
 import { useWalletIdentity } from "../wallet/useWalletIdentity.js";
 import LiveDataButton from "../components/common/LiveDataButton.jsx";
 import TodaysMatches from "../components/league/TodaysMatches.jsx";
+import TopNav from "../components/common/TopNav.jsx";
+import Stepper from "../components/common/Stepper.jsx";
+import { HowToPlayButton } from "../components/common/HowToPlay.jsx";
 import Footer from "../components/common/Footer.jsx";
-import { FEATURED_MATCH_ID } from "../data/mockData.js";
+import { FEATURED_MATCH_ID, MOCK_FIXTURES } from "../data/mockData.js";
 import { shortWallet } from "../lib/league.js";
+
+// The scripted France–Brazil replay is always pinned as the featured demo, so
+// judges can open the full card loop even off match-day. The real World Cup
+// fixtures (live / upcoming / full-time) stream in below it from TxLINE.
+const DEMO_FIXTURE = MOCK_FIXTURES.find((f) => f.id === FEATURED_MATCH_ID);
 
 export default function Live() {
   const { fixtures, source } = useFixtures();
@@ -15,40 +23,47 @@ export default function Live() {
   const { address, connected } = useWalletIdentity();
 
   const isLiveFeed = source === "live";
-  const live = fixtures.filter((f) => f.status === "live" || f.status === "ht");
 
   return (
-    <div className="min-h-screen overflow-x-clip bg-paper">
-      <header className="sticky top-0 z-30 border-b border-canvas bg-paper/85 backdrop-blur">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 py-3">
-          <Link to="/" className="text-sm font-black tracking-tight text-ink">
-            Kickoff<span className="wc-text-gradient">Cards</span>
-          </Link>
-          <div className="flex items-center gap-2">
+    <div className="relative min-h-screen overflow-x-clip bg-paper">
+      {/* Live stadium photo as the page backdrop (replaces the flat white) —
+          shown clean, no scrim. Content sits on opaque cards above it. */}
+      <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0">
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: "url(/stadiums/arena.png)" }}
+        />
+      </div>
+
+      <div className="relative z-10">
+      <TopNav
+        width="max-w-4xl"
+        extra={
+          <>
+            <HowToPlayButton />
             <Link
               to={`/match/${FEATURED_MATCH_ID}`}
-              className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:text-ink"
+              className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink"
             >
-              Demo match
+              Demo
             </Link>
-            <Link
-              to="/collection"
-              className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:text-ink"
-            >
-              Collection
-            </Link>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
+
+      {/* Shared 4-step spine — this hub is step 3: "Follow a live match" */}
+      <div className="bg-paper">
+        <Stepper current={3} />
+      </div>
 
       {/* Hero */}
-      <div className="wc-hero px-5 pb-8 pt-9 text-paper">
+      <div className="wc-hero px-5 pb-5 pt-4 text-paper sm:pb-8 sm:pt-9">
         <div className="mx-auto max-w-4xl">
           <span className="eyebrow !text-paper/85">World Cup · USA · Canada · Mexico · 2026</span>
-          <h1 className="mt-2 text-3xl font-black leading-[0.95] tracking-[-0.03em]">
+          <h1 className="mt-1.5 text-[22px] font-black leading-[0.95] tracking-[-0.03em] sm:mt-2 sm:text-3xl">
             Follow the live World Cup
           </h1>
-          <p className="mt-3 max-w-lg text-[14px] leading-relaxed text-paper/85">
+          <p className="mt-2 max-w-lg text-[12.5px] leading-snug text-paper/85 sm:mt-3 sm:text-[14px] sm:leading-relaxed">
             Real fixtures, scores and match events stream in from TxLINE. Open any
             match to back your cards and watch them resolve on live data.
           </p>
@@ -101,18 +116,7 @@ export default function Live() {
           )}
         </div>
 
-        {/* Live-now callout */}
-        {live.length > 0 && (
-          <div className="mb-4 flex items-center gap-2 text-[13px] font-bold text-ink">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger opacity-70" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-danger" />
-            </span>
-            {live.length} match{live.length !== 1 ? "es" : ""} live right now
-          </div>
-        )}
-
-        <TodaysMatches fixtures={fixtures} />
+        <TodaysMatches fixtures={fixtures} heroFixture={DEMO_FIXTURE} />
 
         {fixtures.length === 0 && (
           <div className="card-light mt-4 flex flex-col items-center gap-2 px-4 py-10 text-center">
@@ -130,7 +134,9 @@ export default function Live() {
           </div>
         )}
 
-        <Footer />
+        <div className="mt-10 rounded-xl border border-canvas bg-paper/85 px-4 py-3 backdrop-blur-sm">
+          <Footer className="!mt-0 !border-t-0 !pt-0" />
+        </div>
         </div>
 
         {/* Flying soccer balls — overlay above the schedule */}
@@ -138,6 +144,7 @@ export default function Live() {
           <img src="/wc-map-balls.svg" alt="" />
         </div>
       </main>
+      </div>
     </div>
   );
 }

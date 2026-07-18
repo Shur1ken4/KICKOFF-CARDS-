@@ -176,6 +176,23 @@ body {
     @apply inline-flex h-5 w-5 items-center justify-center rounded text-[11px] font-black text-paper;
   }
 
+  /* Top-nav link: reserve the bold width up-front via a hidden ::before that
+     renders the label at font-weight 700. The visible text can then swap between
+     medium/bold without changing the element's width, so switching the active
+     page never shifts the neighbouring nav items. */
+  .nav-dock-link {
+    position: relative;
+  }
+  .nav-dock-link::before {
+    content: attr(data-label);
+    display: block;
+    height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    font-weight: 700;
+    pointer-events: none;
+  }
+
   /* --- dark primitives (retained for the Match view) ------------------- */
   .label {
     @apply text-[11px] font-medium uppercase tracking-wider text-text-secondary;
@@ -269,6 +286,17 @@ body {
 }
 .wallet-adapter-modal-title {
   color: #000000 !important;
+}
+
+/* Landing-page live ticker: seamless loop (TICKER is rendered twice, so -50%
+   lands exactly one copy over, then repeats). */
+@keyframes kc-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

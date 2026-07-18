@@ -4,11 +4,21 @@
 // BURNS the staked card forever. Card points (not money) decide the league.
 
 import { PLAYERS, getPlayer, tierMeta, LEGENDS, RARES, COMMONS } from "../data/players.js";
-import { getTeam, groupOf } from "../data/worldcup2026.js";
+import { getTeam, groupOf, TEAMS } from "../data/worldcup2026.js";
 import { getPrediction, difficultyMeta } from "../data/cardPredictions.js";
 
 const KEY = (scope) => `kc:collection:${scope}`;
 const TEAM_CARD_POINTS = 10;
+
+// Team card art lives at public/cards/teams/<slug>.png (see
+// scripts/split-team-cards.py). Slug matches the generated filenames.
+const teamSlug = (name) =>
+  name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 // A scope namespaces a player's collection. Inside a league we scope to
 // `${leagueId}:${wallet}` so points feed that league; otherwise per-wallet.
@@ -29,13 +39,47 @@ function safeParse(str, fallback) {
 const emptyState = () => ({
   seeded: false,
   owned: [], // card descriptors
-  burned: [], // { ...card, burnedAt, matchId }
+  burned: [], // { ...card, burnedAt, matchId, canRevive }
   stakes: {}, // matchId -> [{ cardKey, predictionId, placedAt }]
   log: [], // [{ matchId, cardKey, predictionId, won, rewardKey, at }]
+  points: 0, // Instinct Points — earned on winning calls, spent to revive cards
+  revived: [], // card keys that have already used their one revival
 });
 
+// Instinct Points earned when a call LANDS, scaled by how bold the call was.
+// Bolder reads pay out far more — this is the skill currency, separate from a
+// card's collection value.
+const POINTS_BY_DIFFICULTY = { easy: 5, medium: 10, hard: 25, extreme: 60 };
+
+// Cost to revive a burned card, by the card's tier. A legend costs ~two perfect
+// legendary calls to bring back; a common, two safe wins.
+const REVIVE_COST = { common: 20, team: 35, rare: 50, legend: 120 };
+
+export function reviveCost(card) {
+  return REVIVE_COST[card?.tier] ?? REVIVE_COST.common;
+}
+
+export function getPoints(scope) {
+  return getCollection(scope).points || 0;
+}
+
+// A stored card is only valid if its underlying player/team still exists in the
+// current data. Player pools change across versions (e.g. a name dropped from
+// players.js) but old localStorage saves persist, which would otherwise surface
+// phantom cards. Filtering on read keeps every collection consistent with the
+// live data without touching legit earned/burned history.
+function knownCard(card) {
+  if (!card) return false;
+  if (card.kind === "player") return !!getPlayer(card.id);
+  if (card.kind === "team") return Object.prototype.hasOwnProperty.call(TEAMS, card.name);
+  return false;
+}
+
 export function getCollection(scope) {
-  return safeParse(localStorage.getItem(KEY(scope)), emptyState());
+  const state = safeParse(localStorage.getItem(KEY(scope)), emptyState());
+  if (Array.isArray(state.owned)) state.owned = state.owned.filter(knownCard);
+  if (Array.isArray(state.burned)) state.burned = state.burned.filter(knownCard);
+  return state;
 }
 
 function save(scope, state) {
@@ -70,6 +114,8 @@ export function cardDisplay(card) {
       flag: t.flag,
       accent: t.primary,
       points: TEAM_CARD_POINTS,
+      // Full-bleed team card art. A missing file falls back to the drawn face.
+      image: `/cards/teams/${teamSlug(card.name)}.png`,
     };
   }
   const t = getTeam(card.team);
@@ -109,6 +155,34 @@ export function seedCollection(scope, { teams = [], players = [] } = {}) {
   });
   state.owned = owned;
   state.seeded = true;
+  return save(scope, state);
+}
+
+// A curated starter set for the wallet-less demo scope so the /collection
+// "money shot" always showcases our best art — the legend + rare player photo
+// cards — instead of only team crests. Additive and idempotent (own `demoSeeded`
+// flag): it only fills in missing showcase cards and never removes anything a
+// real player earned or burned through play.
+const DEMO_SHOWCASE_PLAYERS = [
+  "messi", "mbappe", "vinicius", "haaland", "bellingham", "kane", // legends
+  "pedri", "son", "yamal", "olise", // rares
+];
+
+export function seedDemoShowcase(scope) {
+  const state = getCollection(scope);
+  if (state.demoSeeded) return state;
+  const owned = state.owned || [];
+  const seen = new Set(owned.map((c) => c.key));
+  DEMO_SHOWCASE_PLAYERS.forEach((id) => {
+    const c = playerCard(id);
+    if (c && !seen.has(c.key)) {
+      owned.push(c);
+      seen.add(c.key);
+    }
+  });
+  state.owned = owned;
+  state.seeded = true;
+  state.demoSeeded = true;
   return save(scope, state);
 }
 
@@ -164,6 +238,12 @@ function goalsByPlayer(result, playerName) {
   ).length;
 }
 
+function cardsByPlayer(result, playerName, cardType) {
+  return (result.events || []).filter(
+    (e) => e.type === cardType && e.player === playerName
+  ).length;
+}
+
 function scoreFor(result, side) {
   return side === "home" ? result.homeScore : result.awayScore;
 }
@@ -183,10 +263,16 @@ export function evaluateCall(card, prediction, result) {
       return won;
     case "player_scores":
       return goalsByPlayer(result, card.name) >= 1;
-    case "player_scores_and_wins":
-      return won && goalsByPlayer(result, card.name) >= 1;
-    case "player_brace":
-      return goalsByPlayer(result, card.name) >= 2;
+    case "player_substituted":
+      return (result.events || []).some(
+        (e) => e.type === "sub" && e.player === card.name
+      );
+    case "player_hat_trick":
+      return goalsByPlayer(result, card.name) >= 3;
+    case "player_yellow_card":
+      return cardsByPlayer(result, card.name, "yellow") >= 1;
+    case "player_red_card":
+      return cardsByPlayer(result, card.name, "red") >= 1;
     case "team_not_lose":
       return winnerOf(result) === side || winnerOf(result) === "draw";
     case "team_win":
@@ -243,13 +329,18 @@ export function resolveStakes(scope, matchId, result) {
       // Add a fresh copy of the reward card (allow duplicates as collectibles).
       const copy = { ...bonus, key: `${bonus.key}#${Date.now()}${outcomes.length}`, bonus: true };
       state.owned.push(copy);
-      outcomes.push({ cardKey: s.cardKey, card, prediction, won: true, reward: copy });
-      state.log.unshift({ matchId, cardKey: s.cardKey, predictionId: s.predictionId, won: true, rewardKey: copy.key, at: Date.now() });
+      // Award Instinct Points for landing the call — bolder calls pay more.
+      const pts = POINTS_BY_DIFFICULTY[prediction.difficulty] || 0;
+      state.points = (state.points || 0) + pts;
+      outcomes.push({ cardKey: s.cardKey, card, prediction, won: true, reward: copy, points: pts });
+      state.log.unshift({ matchId, cardKey: s.cardKey, predictionId: s.predictionId, won: true, rewardKey: copy.key, points: pts, at: Date.now() });
     } else {
-      // Burn the staked card forever.
+      // Burn the staked card. It lands in the graveyard, where it can be revived
+      // ONCE with Instinct Points — a second burn is permanent.
       state.owned = state.owned.filter((c) => c.key !== s.cardKey);
-      state.burned.unshift({ ...card, burnedAt: Date.now(), matchId });
-      outcomes.push({ cardKey: s.cardKey, card, prediction, won: false });
+      const canRevive = !(state.revived || []).includes(card.key);
+      state.burned.unshift({ ...card, burnedAt: Date.now(), matchId, canRevive });
+      outcomes.push({ cardKey: s.cardKey, card, prediction, won: false, points: 0 });
       state.log.unshift({ matchId, cardKey: s.cardKey, predictionId: s.predictionId, won: false, at: Date.now() });
     }
   });
@@ -261,4 +352,34 @@ export function resolveStakes(scope, matchId, result) {
 
 export function getBurned(scope) {
   return getCollection(scope).burned;
+}
+
+// Instinct Points a call is worth if it lands (badge value on each option).
+export function callPoints(prediction) {
+  return POINTS_BY_DIFFICULTY[prediction?.difficulty] ?? 0;
+}
+
+// Bring a burned card back from the graveyard by spending Instinct Points. Each
+// card can only be revived once — a card that burns again is gone for good.
+export function reviveCard(scope, cardKey) {
+  const state = getCollection(scope);
+  const idx = (state.burned || []).findIndex((c) => c.key === cardKey);
+  if (idx === -1) return { error: "That card isn't in the graveyard.", state };
+
+  const entry = state.burned[idx];
+  if (entry.canRevive === false || (state.revived || []).includes(cardKey)) {
+    return { error: "This card has already used its one revival.", state };
+  }
+
+  const cost = reviveCost(entry);
+  if ((state.points || 0) < cost) {
+    return { error: `Need ${cost} Instinct Points to revive this card.`, state };
+  }
+
+  state.points = (state.points || 0) - cost;
+  state.burned.splice(idx, 1);
+  const { burnedAt, matchId, canRevive, ...card } = entry;
+  state.owned.push(card);
+  state.revived = [...(state.revived || []), cardKey];
+  return { ok: true, cost, state: save(scope, state) };
 }

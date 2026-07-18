@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 
-const PRO_PRICE = "$4.99";
+const PRO_PRICE = "4.99 USDC";
 const WAITLIST_KEY = "mml:pro:waitlist";
 
 const FREE_FEATURES = [
@@ -101,7 +101,7 @@ export default function ProUpsell() {
         <div className="card-light flex flex-col p-5">
           <span className="eyebrow">Free</span>
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-3xl font-black tracking-[-0.02em] text-ink">$0</span>
+            <span className="text-3xl font-black tracking-[-0.02em] text-ink">0 USDC</span>
             <span className="text-[12px] text-graphite">forever</span>
           </div>
           <p className="mt-1 text-[12px] text-graphite">

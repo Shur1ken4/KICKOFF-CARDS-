@@ -21,16 +21,10 @@ export function difficultyMeta(key) {
   return DIFFICULTY[key] || DIFFICULTY.medium;
 }
 
-// Calls you can make on a backed PLAYER card.
+// Calls you can make on a backed PLAYER card. These are all player-specific
+// events resolved from the live event feed (goals + cards for that scorer/name).
+// Team results live in TEAM_PREDICTIONS instead.
 export const PLAYER_PREDICTIONS = [
-  {
-    id: "p_on_winning_side",
-    kind: "player_team_win",
-    label: "Their team wins",
-    blurb: "Back this player to end up on the winning side.",
-    difficulty: "easy",
-    emoji: "🏆",
-  },
   {
     id: "p_scores",
     kind: "player_scores",
@@ -40,20 +34,36 @@ export const PLAYER_PREDICTIONS = [
     emoji: "⚽",
   },
   {
-    id: "p_scores_and_wins",
-    kind: "player_scores_and_wins",
-    label: "Scores in a win",
-    blurb: "Back this player to score AND see their team win.",
+    id: "p_yellow_card",
+    kind: "player_yellow_card",
+    label: "Gets booked",
+    blurb: "Back this player to pick up a yellow card. Riskier — worth more.",
     difficulty: "hard",
-    emoji: "⚽🏆",
+    emoji: "🟨",
   },
   {
-    id: "p_brace",
-    kind: "player_brace",
-    label: "Scores a brace",
-    blurb: "Back this player for two or more goals. Legendary.",
+    id: "p_substituted",
+    kind: "player_substituted",
+    label: "Gets substituted",
+    blurb: "Back this player to be subbed on or off — a safe call that lands most matches.",
+    difficulty: "easy",
+    emoji: "🔄",
+  },
+  {
+    id: "p_red_card",
+    kind: "player_red_card",
+    label: "Sent off",
+    blurb: "Back this player to be shown a red card. Rare — top reward.",
     difficulty: "extreme",
-    emoji: "⚽⚽",
+    emoji: "🟥",
+  },
+  {
+    id: "p_hat_trick",
+    kind: "player_hat_trick",
+    label: "Scores a hat-trick",
+    blurb: "Back this player for three or more goals. Legendary.",
+    difficulty: "extreme",
+    emoji: "⚽⚽⚽",
   },
 ];
 
@@ -96,7 +106,7 @@ export const TEAM_PREDICTIONS = [
     kind: "team_win_by_two",
     label: "Win by 2+ goals",
     blurb: "Back this team for a commanding margin.",
-    difficulty: "extreme",
+    difficulty: "hard",
     emoji: "💥",
   },
 ];

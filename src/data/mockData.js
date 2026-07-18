@@ -125,6 +125,7 @@ export const MOCK_FIXTURES = [
     score: { home: 1, away: 1 },
     kickoff: "20:00",
     odds: { home: 69, draw: 20, away: 11 },
+    lastEvent: { minute: 45, type: "goal", team: "Brazil", player: "Vinícius Jr." },
   },
   {
     id: "mock-esp-arg",
@@ -135,6 +136,7 @@ export const MOCK_FIXTURES = [
     score: { home: 0, away: 1 },
     kickoff: "20:00",
     odds: { home: 38, draw: 29, away: 33 },
+    lastEvent: { minute: 19, type: "goal", team: "Argentina", player: "Lautaro Martínez" },
   },
   {
     id: "mock-eng-ger",
@@ -165,6 +167,7 @@ export const MOCK_FIXTURES = [
     score: { home: 2, away: 0 },
     kickoff: "17:00",
     odds: { home: 96, draw: 3, away: 1 },
+    lastEvent: { minute: 78, type: "goal", team: "Morocco", player: "Achraf Hakimi" },
   },
   {
     id: "mock-usa-mex",
@@ -175,42 +178,72 @@ export const MOCK_FIXTURES = [
     score: { home: 1, away: 1 },
     kickoff: "17:00",
     odds: { home: 38, draw: 30, away: 32 },
+    lastEvent: { minute: 88, type: "goal", team: "Mexico", player: "Raúl Jiménez" },
   },
 ];
 
-// Static odds snapshot per team — used to seed portfolio values for non-featured
-// teams so the leaderboard has signal even before live data arrives.
+// Static tournament-strength snapshot per team — used to seed portfolio values
+// for non-featured teams so the leaderboard has signal even before live data
+// arrives. Keys must match the team names in worldcup2026.js (the qualified 48).
 export const MOCK_TEAM_WIN_PROB = {
-  France: 69,
-  Brazil: 11,
-  Spain: 38,
-  Argentina: 33,
-  England: 41,
-  Germany: 29,
-  Portugal: 44,
-  Netherlands: 28,
-  Morocco: 62,
-  Japan: 24,
-  USA: 38,
-  Mexico: 32,
-  Croatia: 35,
-  Belgium: 40,
-  Uruguay: 30,
-  Switzerland: 27,
-  Senegal: 33,
-  Denmark: 31,
-  Poland: 26,
-  "South Korea": 22,
-  Australia: 19,
-  Serbia: 25,
-  Ecuador: 21,
-  Ghana: 18,
-  Cameroon: 23,
-  Canada: 20,
-  Wales: 24,
-  "Saudi Arabia": 16,
-  Iran: 17,
-  Tunisia: 19,
-  "Costa Rica": 15,
-  Qatar: 14,
+  // Group A
+  Mexico: 40,
+  "South Africa": 20,
+  "South Korea": 26,
+  Czechia: 28,
+  // Group B
+  Canada: 30,
+  Bosnia: 24,
+  Qatar: 16,
+  Switzerland: 34,
+  // Group C
+  Brazil: 62,
+  Morocco: 44,
+  Haiti: 12,
+  Scotland: 26,
+  // Group D
+  USA: 42,
+  Paraguay: 24,
+  Australia: 22,
+  Turkey: 36,
+  // Group E
+  Germany: 55,
+  "Curaçao": 12,
+  "Ivory Coast": 30,
+  Ecuador: 28,
+  // Group F
+  Netherlands: 52,
+  Japan: 34,
+  Sweden: 30,
+  Tunisia: 20,
+  // Group G
+  Belgium: 48,
+  Egypt: 30,
+  Iran: 24,
+  "New Zealand": 12,
+  // Group H
+  Spain: 60,
+  "Cabo Verde": 14,
+  Saudi: 18,
+  Uruguay: 40,
+  // Group I
+  France: 66,
+  Senegal: 38,
+  Iraq: 16,
+  Norway: 40,
+  // Group J
+  Argentina: 64,
+  Algeria: 28,
+  Austria: 32,
+  Jordan: 14,
+  // Group K
+  Portugal: 58,
+  "DR Congo": 24,
+  Uzbekistan: 18,
+  Colombia: 42,
+  // Group L
+  England: 56,
+  Croatia: 40,
+  Ghana: 24,
+  Panama: 16,
 };

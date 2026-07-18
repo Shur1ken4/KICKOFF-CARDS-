@@ -11,7 +11,7 @@ import {
   backCard,
   unbackCard,
   cardDisplay,
-  rewardTierFor,
+  callPoints,
 } from "../../lib/cards.js";
 import {
   PLAYER_PREDICTIONS,
@@ -65,7 +65,10 @@ export default function StakingPanel({
         <div className="mb-3 flex items-center justify-between">
           <span className="eyebrow">Full time — your calls</span>
           <span className="text-[11px] text-graphite">
-            {outcomes.filter((o) => o.won).length}/{outcomes.length} landed
+            {outcomes.filter((o) => o.won).length}/{outcomes.length} landed ·{" "}
+            <span className="font-bold text-ink">
+              +{outcomes.reduce((sum, o) => sum + (o.points || 0), 0)} pts
+            </span>
           </span>
         </div>
         {outcomes.length === 0 ? (
@@ -84,7 +87,7 @@ export default function StakingPanel({
                       o.won ? "text-primary" : "text-danger"
                     }`}
                   >
-                    {o.won ? "Call landed · +1 card" : "Card burned"}
+                    {o.won ? `Call landed · +${o.points || 0} pts` : "Card burned"}
                   </div>
                   <div className="truncate text-center text-[10px] text-graphite">
                     {o.prediction.label}
@@ -95,7 +98,7 @@ export default function StakingPanel({
           </div>
         )}
         <p className="mt-3 text-center text-[10px] uppercase tracking-wider text-graphite">
-          Earned cards are added to your collection · burned cards are gone for good
+          Landed calls earn Instinct Points · spend them to revive burned cards in your collection
         </p>
       </div>
     );
@@ -194,14 +197,12 @@ export default function StakingPanel({
             </p>
           ) : picking ? (
             <CallChooser
-              cardKey={picking}
-              card={owned.find((c) => c.key === picking)}
               predictions={predictions}
               onPick={(pid) => stake(picking, pid)}
               onBack={() => setPicking(null)}
             />
           ) : (
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-6">
               {list.map((c) => {
                 const d = cardDisplay(c);
                 const isStaked = stakedKeys.has(c.key);
@@ -225,7 +226,7 @@ export default function StakingPanel({
   );
 }
 
-function CallChooser({ card, predictions, onPick, onBack }) {
+function CallChooser({ predictions, onPick, onBack }) {
   return (
     <div>
       <button
@@ -251,10 +252,10 @@ function CallChooser({ card, predictions, onPick, onBack }) {
                 <div className="text-[11px] text-graphite">{p.blurb}</div>
               </div>
               <span
-                className="shrink-0 rounded-md px-2 py-1 text-[10px] font-black uppercase tracking-wide"
+                className="shrink-0 rounded-md px-2 py-1 text-[11px] font-black uppercase tracking-wide tnum"
                 style={{ background: `${diff.color}22`, color: diff.color }}
               >
-                {rewardTierFor(card, p)} card
+                +{callPoints(p)} pts
               </span>
             </button>
           );

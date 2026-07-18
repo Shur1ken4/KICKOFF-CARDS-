@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useWalletIdentity } from "../wallet/useWalletIdentity.js";
 import {
@@ -6,27 +6,55 @@ import {
   ownedCards,
   getBurned,
   totalPoints,
+  getPoints,
+  reviveCard,
+  reviveCost,
   cardDisplay,
   playerCard,
   teamCard,
+  seedDemoShowcase,
 } from "../lib/cards.js";
 import { tierMeta, PLAYERS } from "../data/players.js";
 import { ALL_TEAM_NAMES } from "../data/worldcup2026.js";
 import { FEATURED_MATCH_ID } from "../data/mockData.js";
 import Card from "../components/cards/Card.jsx";
 import { CosmeticPacks, NftMint, Editions } from "../components/common/Monetization.jsx";
+import TopNav from "../components/common/TopNav.jsx";
 import Footer from "../components/common/Footer.jsx";
 
-const TIER_ORDER = { team: 0, legend: 1, rare: 2, common: 3 };
+// Lead the owned grid with our best art — the legend + rare player photo cards —
+// then rares, commons, and finally the team crests.
+const TIER_ORDER = { legend: 0, rare: 1, common: 2, team: 3 };
 
 export default function Collection() {
   const { address } = useWalletIdentity();
   const scope = collectionScope({ wallet: address || "demo" });
   const [tab, setTab] = useState("owned");
+  // Bumped after a revive so the collection + graveyard re-read from storage.
+  const [refresh, setRefresh] = useState(0);
+  const [reviveError, setReviveError] = useState("");
+
+  // For the wallet-less demo, make sure the owned grid showcases our best art
+  // (legend + rare player photo cards), not just team crests. Runs once per
+  // demo scope; additive so it never touches a connected player's collection.
+  useEffect(() => {
+    if (!address) {
+      seedDemoShowcase(scope);
+      setRefresh((n) => n + 1);
+    }
+  }, [address, scope]);
 
   const owned = ownedCards(scope);
   const burned = getBurned(scope);
   const points = totalPoints(scope);
+  const instinct = getPoints(scope);
+
+  const revive = (cardKey) => {
+    const res = reviveCard(scope, cardKey);
+    if (res.error) return setReviveError(res.error);
+    setReviveError("");
+    setRefresh((n) => n + 1);
+  };
 
   const sorted = useMemo(() => {
     return [...owned].sort((a, b) => {
@@ -47,38 +75,39 @@ export default function Collection() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-30 border-b border-canvas bg-paper/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
-          <Link to="/" className="text-sm font-black tracking-tight text-ink">
-            Kickoff<span className="wc-text-gradient">Cards</span>
+      <TopNav
+        extra={
+          <Link
+            to={`/match/${FEATURED_MATCH_ID}`}
+            className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink"
+          >
+            Demo
           </Link>
-          <div className="flex items-center gap-2">
-            <Link
-              to="/live"
-              className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:text-ink"
-            >
-              Live
-            </Link>
-            <Link
-              to={`/match/${FEATURED_MATCH_ID}`}
-              className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:text-ink"
-            >
-              Demo match
-            </Link>
-          </div>
-        </div>
-      </header>
+        }
+      />
 
       <main className="mx-auto max-w-5xl px-4 pb-16 pt-6">
-        <div className="mb-6">
-          <span className="eyebrow wc-text-gradient">Your collection</span>
-          <h1 className="mt-1 text-3xl font-black tracking-[-0.02em] text-ink">
-            {points} card points
-          </h1>
-          <p className="mt-1 text-sm text-graphite">
-            {owned.length} card{owned.length !== 1 ? "s" : ""} in your collection ·{" "}
-            {burned.length} burned
-          </p>
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <span className="eyebrow wc-text-gradient">Your collection</span>
+            <h1 className="mt-1 text-3xl font-black tracking-[-0.02em] text-ink">
+              {points} card points
+            </h1>
+            <p className="mt-1 text-sm text-graphite">
+              {owned.length} card{owned.length !== 1 ? "s" : ""} in your collection ·{" "}
+              {burned.length} burned
+            </p>
+          </div>
+          {/* Instinct Points — the skill currency you spend to revive burned cards */}
+          <div className="flex items-center gap-2 rounded-xl border border-canvas bg-paper px-3.5 py-2">
+            <span aria-hidden="true" className="text-lg">⚡</span>
+            <div className="leading-tight">
+              <div className="tnum text-xl font-black text-ink">{instinct}</div>
+              <div className="text-[10px] font-bold uppercase tracking-wide text-graphite">
+                Instinct pts
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* tier tallies */}
@@ -131,16 +160,49 @@ export default function Collection() {
         ) : burned.length === 0 ? (
           <EmptyState
             title="Nothing burned"
-            body="When a backed call loses, the staked card burns forever and lands here."
+            body="When a backed call loses, the staked card burns and lands here — spend Instinct Points to revive it."
           />
         ) : (
-          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-            {burned.map((c, i) => (
-              <div key={`${c.key}-${i}`} className="opacity-60 grayscale">
-                <Card {...cardDisplay(c)} disabled />
-              </div>
-            ))}
-          </div>
+          <>
+            <p className="mb-3 text-[13px] text-graphite">
+              Spend <span className="font-bold text-ink">Instinct Points</span> to revive a
+              burned card. Each card can only be revived once — a second burn is permanent.
+            </p>
+            {reviveError && (
+              <p className="mb-3 text-xs font-semibold text-danger">{reviveError}</p>
+            )}
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+              {burned.map((c, i) => {
+                const cost = reviveCost(c);
+                const canRevive = c.canRevive !== false;
+                const affordable = instinct >= cost;
+                return (
+                  <div key={`${c.key}-${i}`} className="flex flex-col gap-1.5">
+                    <div className="opacity-60 grayscale">
+                      <Card {...cardDisplay(c)} disabled />
+                    </div>
+                    {canRevive ? (
+                      <button
+                        onClick={() => revive(c.key)}
+                        disabled={!affordable}
+                        className={`rounded-md px-2 py-1.5 text-[11px] font-black uppercase tracking-wide transition ${
+                          affordable
+                            ? "bg-ink text-paper hover:opacity-90"
+                            : "cursor-not-allowed border border-canvas text-graphite"
+                        }`}
+                      >
+                        Revive · {cost} pts
+                      </button>
+                    ) : (
+                      <span className="rounded-md border border-canvas px-2 py-1.5 text-center text-[10px] font-bold uppercase tracking-wide text-graphite">
+                        Gone for good
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
 
         {/* monetization surfaces (informational only) */}

@@ -12,6 +12,7 @@ import MatchStory from "../components/match/MatchStory.jsx";
 import StakingPanel from "../components/match/StakingPanel.jsx";
 import ResolveOverlay from "../components/match/ResolveOverlay.jsx";
 import Footer from "../components/common/Footer.jsx";
+import { HowToPlayButton } from "../components/common/HowToPlay.jsx";
 import { useWalletIdentity } from "../wallet/useWalletIdentity.js";
 import { collectionScope, seedCollection, ownedCards, resolveStakes } from "../lib/cards.js";
 
@@ -178,22 +179,25 @@ export default function Match() {
         {/* Top bar */}
         <header className="sticky top-0 z-30 border-b border-canvas bg-paper/85 backdrop-blur">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
-            <Link
-              to={leagueId ? `/league/${leagueId}` : "/"}
-              className="text-sm font-black tracking-tight text-ink"
-            >
-              Kickoff<span className="wc-text-gradient">Cards</span>
-            </Link>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Link
-                to="/live"
-                className="rounded-lg border border-canvas bg-paper px-3 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink"
+                to="/"
+                className="text-base font-black uppercase tracking-tighter text-ink sm:text-lg"
               >
-                Live
+                Kickoff <span className="wc-text-gradient">Cards</span>
               </Link>
               <Link
+                to={leagueId ? `/league/${leagueId}` : "/live"}
+                className="hidden rounded-lg px-2.5 py-1.5 text-xs font-semibold text-graphite transition hover:text-ink sm:inline-flex"
+              >
+                ← {leagueId ? "Back to league" : "Back to schedule"}
+              </Link>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <HowToPlayButton className="hidden rounded-lg border border-[#d1c1d7] px-3 py-1.5 text-xs font-semibold text-[#4e4354] transition hover:border-[#1c1c1b] hover:text-[#1c1c1b] sm:inline-flex" />
+              <Link
                 to="/collection"
-                className="rounded-lg border border-canvas bg-paper px-3 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink"
+                className="whitespace-nowrap rounded-lg border border-canvas bg-paper px-2.5 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink sm:px-3"
               >
                 Collection
               </Link>
@@ -201,13 +205,13 @@ export default function Match() {
                 <>
                   <button
                     onClick={togglePlay}
-                    className="rounded-lg border border-canvas bg-paper px-3 py-1.5 text-xs font-semibold text-ink transition hover:border-ink"
+                    className="whitespace-nowrap rounded-lg border border-canvas bg-paper px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-ink sm:px-3"
                   >
                     {playing ? "Pause" : status === "finished" ? "Replay" : "Play"}
                   </button>
                   <button
                     onClick={restart}
-                    className="rounded-lg border border-canvas bg-paper px-3 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink"
+                    className="whitespace-nowrap rounded-lg border border-canvas bg-paper px-2.5 py-1.5 text-xs font-semibold text-graphite transition hover:border-ink hover:text-ink sm:px-3"
                   >
                     Restart
                   </button>

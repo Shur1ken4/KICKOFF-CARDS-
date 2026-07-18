@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import Landing from "./pages/Landing.jsx";
 import Onboarding from "./pages/Onboarding.jsx";
 import League from "./pages/League.jsx";
 import Match from "./pages/Match.jsx";
@@ -8,7 +9,8 @@ import Live from "./pages/Live.jsx";
 export default function App() {
   return (
     <Routes>
-      <Route path="/" element={<Onboarding />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/start" element={<Onboarding />} />
       <Route path="/live" element={<Live />} />
       <Route path="/league/:id" element={<League />} />
       <Route path="/match/:matchId" element={<Match />} />

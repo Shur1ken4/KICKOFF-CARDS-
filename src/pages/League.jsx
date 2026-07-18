@@ -6,12 +6,17 @@ import {
   totalPoints,
   ownedCards,
   seedCollection,
+  playerCard,
+  teamCard,
+  cardDisplay,
 } from "../lib/cards.js";
 import { ALL_TEAM_NAMES } from "../data/worldcup2026.js";
 import { PLAYERS } from "../data/players.js";
 import { useFixtures } from "../hooks/useFixtures.js";
 import TodaysMatches from "../components/league/TodaysMatches.jsx";
 import { LeagueUpsell } from "../components/common/Monetization.jsx";
+import Card from "../components/cards/Card.jsx";
+import TopNav from "../components/common/TopNav.jsx";
 import Footer from "../components/common/Footer.jsx";
 
 function CopyCode({ code }) {
@@ -87,6 +92,16 @@ export default function League() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league, id, meId]);
 
+  // The current player's own picks for this league — drives the locked roster
+  // below (their cards read as unlocked; the rest of the game is shaded/locked,
+  // so the selection is visibly final and can't be re-rolled).
+  const me = league ? league.members.find((m) => m.id === meId) : null;
+  const myScope = collectionScope({ leagueId: id, wallet: me?.wallet || me?.id });
+  const myOwnedKeys = useMemo(
+    () => new Set(ownedCards(myScope).map((c) => c.key)),
+    [myScope]
+  );
+
   if (!league) {
     return (
       <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
@@ -104,19 +119,7 @@ export default function League() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-30 border-b border-canvas bg-paper/85 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3">
-          <Link to="/" className="text-sm font-black tracking-tight text-ink">
-            Kickoff<span className="wc-text-gradient">Cards</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Link to="/collection" className="rounded-lg border border-canvas px-3 py-1.5 text-xs font-semibold text-graphite transition hover:text-ink">
-              Collection
-            </Link>
-            <CopyCode code={league.id} />
-          </div>
-        </div>
-      </header>
+      <TopNav extra={<CopyCode code={league.id} />} />
 
       <main className="mx-auto max-w-5xl px-4 pb-16 pt-6">
         <div className="mb-6">
@@ -189,6 +192,8 @@ export default function League() {
           </div>
         </div>
 
+        <LockedRoster ownedKeys={myOwnedKeys} />
+
         <div className="mt-4">
           <LeagueUpsell />
         </div>
@@ -196,5 +201,75 @@ export default function League() {
         <Footer />
       </main>
     </div>
+  );
+}
+
+// The player's locked-in roster for this league. Every card in the game is
+// shown; the ones this player picked are unlocked (full colour), everything
+// else is shaded with a "Locked" badge — a read-only reminder that the
+// selection is final (no re-picking inside a league).
+function LockedRoster({ ownedKeys }) {
+  const players = useMemo(
+    () =>
+      PLAYERS.map((p) => playerCard(p.id))
+        .filter(Boolean)
+        .map((c) => ({ key: c.key, display: cardDisplay(c) })),
+    []
+  );
+  const teams = useMemo(
+    () =>
+      ALL_TEAM_NAMES.map((name) => teamCard(name)).map((c) => ({
+        key: c.key,
+        display: cardDisplay(c),
+      })),
+    []
+  );
+  const unlocked =
+    players.filter((p) => ownedKeys.has(p.key)).length +
+    teams.filter((t) => ownedKeys.has(t.key)).length;
+
+  const renderCard = ({ key, display }) => {
+    const owned = ownedKeys.has(key);
+    return (
+      <div key={key} className="relative">
+        <div className={owned ? "" : "opacity-40 grayscale"}>
+          <Card {...display} disabled className="w-full" />
+        </div>
+        {!owned && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="rounded-full bg-ink/85 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-paper">
+              Locked
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <section className="mt-10 border-t border-canvas pt-8">
+      <span className="eyebrow wc-text-gradient">Your locked-in cards</span>
+      <h2 className="mt-1 text-2xl font-black tracking-[-0.02em] text-ink">
+        These are your picks for this league
+      </h2>
+      <p className="mt-1 text-sm text-graphite">
+        {unlocked} card{unlocked !== 1 ? "s" : ""} unlocked · the rest are locked —
+        your selection is final for this league.
+      </p>
+
+      <h3 className="mb-3 mt-6 text-[12px] font-black uppercase tracking-wide text-graphite">
+        Players
+      </h3>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        {players.map(renderCard)}
+      </div>
+
+      <h3 className="mb-3 mt-8 text-[12px] font-black uppercase tracking-wide text-graphite">
+        National teams
+      </h3>
+      <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        {teams.map(renderCard)}
+      </div>
+    </section>
   );
 }

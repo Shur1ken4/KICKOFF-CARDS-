@@ -4,8 +4,8 @@
 // state only. No real payment, wallet charge, or token mint ever happens here.
 
 import { useState } from "react";
+import MintCard from "./MintCard";
 
-const FINAL_DATE = new Date("2026-07-19T00:00:00Z");
 const INTEREST_KEY = "kc:interest";
 
 function useInterest(id) {
@@ -30,16 +30,10 @@ function useInterest(id) {
 }
 
 const COSMETIC_PACKS = [
-  { id: "starter_boost", name: "Starter Boost", price: "$2.99", desc: "3 extra starter cards + a custom league badge." },
-  { id: "card_skin", name: "Card Skin Pack", price: "$1.99", desc: "Alternate art skins for your favourite cards." },
-  { id: "animated_story", name: "Animated Story", price: "$0.99", desc: "Turn any Match Story into a shareable animation." },
-  { id: "league_badge", name: "League Badge", price: "$1.99", desc: "A custom crest + colours for your league." },
-];
-
-const MINT_TIERS = [
-  { tier: "Common", price: "$0.50", color: "#9CA3AF" },
-  { tier: "Rare", price: "$1.99", color: "#7C6CF0" },
-  { tier: "Legend", price: "$4.99", color: "#E4B23C" },
+  { id: "starter_boost", name: "Starter Boost", price: "2.99 USDC", desc: "3 extra starter cards + a custom league badge." },
+  { id: "card_skin", name: "Card Skin Pack", price: "1.99 USDC", desc: "Alternate art skins for your favourite cards." },
+  { id: "animated_story", name: "Animated Story", price: "0.99 USDC", desc: "Turn any Match Story into a shareable animation." },
+  { id: "league_badge", name: "League Badge", price: "1.99 USDC", desc: "A custom crest + colours for your league." },
 ];
 
 // Two editions of the same free-to-play game. The Free edition ships the full
@@ -50,23 +44,23 @@ const EDITIONS = [
   {
     id: "edition_free",
     name: "Free",
-    price: "$0",
+    price: "0 USDC",
     tag: "Play now",
     features: [
-      "All 48 national-team cards",
-      "A starter set of player cards",
+      "34 players from national teams",
+      "A starter set of 10 player cards",
       "Full league + live staking loop",
     ],
   },
   {
     id: "edition_full_squad",
     name: "Full Squad",
-    price: "$4.99",
+    price: "4.99 USDC",
     tag: "Every player",
     highlight: true,
     features: [
-      "All 48 national-team cards",
-      "The complete player roster to collect",
+      "Unlocks all 100+ players from all teams",
+      "A starter set of 15 player cards",
       "Exclusive card frames & art skins",
     ],
   },
@@ -116,7 +110,7 @@ function EditionCard({ edition }) {
           </li>
         ))}
       </ul>
-      {edition.price === "$0" ? (
+      {edition.price === "0 USDC" ? (
         <span className="mt-3 rounded-lg border border-canvas bg-canvas/60 py-2 text-center text-[12px] font-bold text-graphite">
           Included — you're playing it
         </span>
@@ -178,35 +172,37 @@ function PackCard({ pack }) {
 }
 
 // Optional NFT mint of your collection — only available AFTER the final, and only
-// ever initiated by you in your own wallet. This surface is informational.
+// ever initiated by you in your own wallet. This surface is a *preview*: tapping
+// "Mint" plays a visual charge-up + flip-reveal so fans can feel how minting will
+// work, without any wallet debit, token mint, or network call.
 export function NftMint() {
-  const open = new Date() >= FINAL_DATE;
+  // Glow tint reacts to the finish picked inside <MintCard/> (gold Legend by
+  // default). The colour comes back as a hex string; append alpha suffixes.
+  const [glow, setGlow] = useState("#E4B23C");
   return (
     <section>
-      <div className="wc-hero rounded-xl p-5 text-paper">
+      <div
+        className="rounded-xl border border-white/10 p-5 text-paper"
+        style={{
+          background: `radial-gradient(120% 130% at 50% -10%, ${glow}47, rgba(11,11,18,0) 55%), radial-gradient(100% 120% at 100% 110%, ${glow}22, rgba(11,11,18,0) 58%), #0b0b12`,
+          transition: "background 0.45s ease",
+        }}
+      >
         <div className="flex items-center justify-between">
           <span className="eyebrow !text-paper/85">Mint your collection</span>
-          <span className="rounded bg-paper/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+          <span className="rounded bg-paper/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
             After the final
           </span>
         </div>
         <p className="mt-2 text-[13px] text-paper/85">
           When the tournament ends, you can optionally mint your surviving cards as
-          keepsake NFTs on Solana. Totally optional — your cards and league result
+          keepsake NFTs on Solana. Each mint reveals a{" "}
+          <span className="font-bold text-paper">random player</span> from the finish
+          you pick — collect them all. Totally optional; your cards and league result
           never depend on it.
         </p>
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          {MINT_TIERS.map((m) => (
-            <div key={m.tier} className="rounded-lg bg-paper/15 px-2 py-2 text-center">
-              <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "#fff" }}>
-                {m.tier}
-              </div>
-              <div className="tnum text-sm font-black">{m.price}</div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 rounded-lg bg-paper/20 py-2.5 text-center text-[12px] font-bold">
-          {open ? "Minting opens in your wallet — you sign every mint" : "Minting opens after the final · Jul 19, 2026"}
+        <div className="mt-5">
+          <MintCard onTierChange={setGlow} />
         </div>
       </div>
       <p className="mt-2 text-center text-[11px] text-graphite">
@@ -224,7 +220,7 @@ export function LeagueUpsell() {
       <div>
         <p className="eyebrow wc-text-gradient">Make it yours</p>
         <p className="mt-1 text-[13px] text-graphite">
-          Custom league crest, colours & card skins · <span className="font-bold text-ink">from $1.99</span> · cosmetic only
+          Custom league crest, colours & card skins · <span className="font-bold text-ink">from 1.99 USDC</span> · cosmetic only
         </p>
       </div>
       {saved ? (
