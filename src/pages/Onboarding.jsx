@@ -80,7 +80,7 @@ const PLAYER_PHOTOS = {
 export default function Onboarding() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { address } = useWalletIdentity();
+  const { address, connected } = useWalletIdentity();
 
   // The Landing "Enter Kickoff Cards" CTA arrives with { showHowTo: true } to
   // auto-open the explainer once. Clear it so a later refresh doesn't reopen it.
@@ -98,13 +98,16 @@ export default function Onboarding() {
   // so they carry the same cards into every league and can't silently re-roll.
   const baseScope = collectionScope({ wallet: address || "demo" });
   const [seeded] = useState(() => getCollection(baseScope));
-  const locked = !!seeded.seeded;
+  // Locking a starter collection is an account feature: only a connected wallet
+  // gets a permanent, non-re-rollable set. Guests (no wallet) can always freely
+  // select and re-pick, so browsing without an account never locks anything.
+  const locked = connected && !!seeded.seeded;
 
   const [teams, setTeams] = useState(() =>
-    locked ? seeded.owned.filter((c) => c.kind === "team").map((c) => c.name) : []
+    seeded.seeded ? seeded.owned.filter((c) => c.kind === "team").map((c) => c.name) : []
   );
   const [players, setPlayers] = useState(() =>
-    locked ? seeded.owned.filter((c) => c.kind === "player").map((c) => c.id) : []
+    seeded.seeded ? seeded.owned.filter((c) => c.kind === "player").map((c) => c.id) : []
   );
   const [leagueName, setLeagueName] = useState("");
   const [code, setCode] = useState("");
@@ -135,6 +138,7 @@ export default function Onboarding() {
   };
 
   const create = () => {
+    if (!connected) return setError("Connect your wallet to create a league.");
     const res = createLeague(leagueName, { wallet: address });
     if (res.error) return setError(res.error);
     // Lock the selection globally first, then carry it into the new league so
@@ -145,6 +149,7 @@ export default function Onboarding() {
   };
 
   const join = () => {
+    if (!connected) return setError("Connect your wallet to join a league.");
     if (code.trim().length < 6) return setError("Join codes are 6 characters.");
     const res = joinLeague(code, { wallet: address });
     if (res.error) return setError(res.error);
@@ -201,6 +206,14 @@ export default function Onboarding() {
               straight into creating or joining a league on arrival. */}
           <div className="mb-16">
             <SectionHead title="Start Playing" eyebrow="Leagues & Demo" />
+            {!connected && (
+              <div className="mb-4 flex items-center gap-3 rounded-xl border border-[#d1c1d7] bg-[#f5f0f7] px-4 py-3">
+                <LockGlyph />
+                <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#4e4354]">
+                  Connect your wallet to create or join leagues.
+                </p>
+              </div>
+            )}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="border border-[#d1c1d7] bg-white p-6">
                 <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#4e4354]">
@@ -214,8 +227,13 @@ export default function Onboarding() {
                 />
                 <button
                   onClick={create}
-                  style={{ background: SPECTRUM }}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-full py-3 text-[12px] font-bold uppercase tracking-[0.2em] text-white transition-all active:scale-95"
+                  disabled={!connected}
+                  style={connected ? { background: SPECTRUM } : undefined}
+                  className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full py-3 text-[12px] font-bold uppercase tracking-[0.2em] transition-all ${
+                    connected
+                      ? "text-white active:scale-95"
+                      : "cursor-not-allowed bg-[#eadff0] text-[#4e4354] opacity-70"
+                  }`}
                 >
                   Create league →
                 </button>
@@ -234,7 +252,12 @@ export default function Onboarding() {
                 />
                 <button
                   onClick={join}
-                  className="mt-3 w-full rounded-full border-2 border-[#1c1c1b] py-3 text-[12px] font-bold uppercase tracking-[0.2em] text-[#1c1c1b] transition-all hover:bg-[#1c1c1b] hover:text-white active:scale-95"
+                  disabled={!connected}
+                  className={`mt-3 w-full rounded-full border-2 py-3 text-[12px] font-bold uppercase tracking-[0.2em] transition-all ${
+                    connected
+                      ? "border-[#1c1c1b] text-[#1c1c1b] hover:bg-[#1c1c1b] hover:text-white active:scale-95"
+                      : "cursor-not-allowed border-[#d1c1d7] text-[#4e4354] opacity-70"
+                  }`}
                 >
                   Join league
                 </button>
@@ -409,7 +432,7 @@ export default function Onboarding() {
             style={{ background: SPECTRUM }}
             className="flex w-full items-center justify-center gap-2 rounded-full px-12 py-4 text-[12px] font-bold uppercase tracking-[0.2em] text-white shadow-2xl shadow-[#6700a1]/30 transition-all hover:-translate-y-1 active:scale-95 md:w-auto"
           >
-            Continue Selection →
+            Play →
           </button>
         </div>
       </footer>

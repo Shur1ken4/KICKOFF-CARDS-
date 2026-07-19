@@ -139,9 +139,12 @@ export default function Live() {
         </div>
         </div>
 
-        {/* Flying soccer balls — overlay above the schedule */}
+        {/* Flying soccer balls — overlay above the schedule. Two sizes swapped by
+            breakpoint: larger balls on mobile (small viewport), original size on
+            desktop so they don't get oversized on wide screens. */}
         <div aria-hidden="true" className="wc-map-balls">
-          <img src="/wc-map-balls.svg" alt="" />
+          <img src="/wc-map-balls.svg" alt="" className="md:hidden" />
+          <img src="/wc-map-balls-desktop.svg" alt="" className="hidden md:block" />
         </div>
       </main>
       </div>
