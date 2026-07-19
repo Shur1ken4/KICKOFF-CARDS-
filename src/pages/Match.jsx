@@ -60,9 +60,12 @@ export default function Match() {
 
   // --- Collection / staking scope ------------------------------------------
   const { address: wallet } = useWalletIdentity();
+  // One unified collection per player, regardless of which league a fixture was
+  // opened from. Backing/earning/burning always feeds the same collection the
+  // Collection page and league leaderboard read, so points stay consistent.
   const scope = useMemo(
-    () => collectionScope({ leagueId, wallet: wallet || "demo" }),
-    [leagueId, wallet]
+    () => collectionScope({ wallet: wallet || "demo" }),
+    [wallet]
   );
   const [stakeTick, setStakeTick] = useState(0);
   const [outcomes, setOutcomes] = useState(null);

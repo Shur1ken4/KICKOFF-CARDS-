@@ -77,12 +77,19 @@ export default function League() {
   const standings = useMemo(() => {
     if (!league) return [];
     const rows = league.members.map((m) => {
-      const scope = collectionScope({ leagueId: id, wallet: m.wallet || m.id });
-      if (m.id !== meId) ensureDemoCollection(scope);
+      const isMe = m.id === meId;
+      // The real player's league points mirror their one true collection — the
+      // same scope the Collection page reads — so the leaderboard number always
+      // matches what they actually own. Demo opponents (no real collection) keep
+      // a league-scoped sample set purely for leaderboard signal.
+      const scope = isMe
+        ? collectionScope({ wallet: m.wallet || m.id })
+        : collectionScope({ leagueId: id, wallet: m.wallet || m.id });
+      if (!isMe) ensureDemoCollection(scope);
       return {
         id: m.id,
         name: m.name,
-        isMe: m.id === meId,
+        isMe,
         points: totalPoints(scope),
         cards: ownedCards(scope).length,
       };
@@ -96,7 +103,9 @@ export default function League() {
   // below (their cards read as unlocked; the rest of the game is shaded/locked,
   // so the selection is visibly final and can't be re-rolled).
   const me = league ? league.members.find((m) => m.id === meId) : null;
-  const myScope = collectionScope({ leagueId: id, wallet: me?.wallet || me?.id });
+  // Same unified collection scope as the standings row above — the locked roster
+  // reflects the player's real owned cards, matching their leaderboard points.
+  const myScope = collectionScope({ wallet: me?.wallet || me?.id });
   const myOwnedKeys = useMemo(
     () => new Set(ownedCards(myScope).map((c) => c.key)),
     [myScope]
