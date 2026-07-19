@@ -37,9 +37,29 @@ export function useFixtures() {
     };
   }, [access]);
 
-  // Sort: live first, then upcoming, then finished.
+  // Sort: live first, then upcoming, then finished; soonest kickoff first within
+  // a group so the earliest fixture of a pairing is the one we keep below.
   const order = { live: 0, ht: 0, upcoming: 1, finished: 2 };
-  const sorted = [...fixtures].sort((a, b) => (order[a.status] ?? 3) - (order[b.status] ?? 3));
+  const kickoffMs = (f) => {
+    const t = f.kickoff ? new Date(f.kickoff).getTime() : NaN;
+    return Number.isNaN(t) ? 0 : t;
+  };
+  const sorted = [...fixtures].sort((a, b) => {
+    const s = (order[a.status] ?? 3) - (order[b.status] ?? 3);
+    return s !== 0 ? s : kickoffMs(a) - kickoffMs(b);
+  });
 
-  return { fixtures: sorted, source };
+  // De-duplicate repeated fixtures for the same pairing. The TxLINE sample feed
+  // can list the same two teams multiple times (different FixtureIds/kickoffs),
+  // which surfaced as duplicate rows. Keep the first — i.e. the most-live /
+  // soonest — occurrence per home→away pair.
+  const seen = new Set();
+  const deduped = sorted.filter((f) => {
+    const key = `${f.home}\u0000${f.away}`.toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return { fixtures: deduped, source };
 }
