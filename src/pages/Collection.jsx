@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useWalletIdentity } from "../wallet/useWalletIdentity.js";
 import {
@@ -12,7 +12,6 @@ import {
   cardDisplay,
   playerCard,
   teamCard,
-  seedDemoShowcase,
 } from "../lib/cards.js";
 import { tierMeta, PLAYERS } from "../data/players.js";
 import { ALL_TEAM_NAMES } from "../data/worldcup2026.js";
@@ -33,16 +32,6 @@ export default function Collection() {
   // Bumped after a revive so the collection + graveyard re-read from storage.
   const [refresh, setRefresh] = useState(0);
   const [reviveError, setReviveError] = useState("");
-
-  // For the wallet-less demo, make sure the owned grid showcases our best art
-  // (legend + rare player photo cards), not just team crests. Runs once per
-  // demo scope; additive so it never touches a connected player's collection.
-  useEffect(() => {
-    if (!address) {
-      seedDemoShowcase(scope);
-      setRefresh((n) => n + 1);
-    }
-  }, [address, scope]);
 
   const owned = ownedCards(scope);
   const burned = getBurned(scope);
